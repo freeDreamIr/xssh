@@ -10,6 +10,7 @@ import requests
 import jdatetime
 import payment
 import cryptocompare
+import base64
 from uuid import uuid4
 from pathlib import Path
 from time import time, sleep
@@ -49,6 +50,47 @@ checked_filtering, checked_connections, checked_users, checked_id, cache_list, s
 cache, backup, run_backup, Filtering_system, run_filtering, notify_system, run_notify, backup_command, search_spam = ([False] for i in range(9))
 filter_name = ['root', 'Root', 'ROOT', 'ubuntu', 'Ubuntu', 'UBUNTU', 'centos', 'Centos', 'CentOS', 'user', 'User', 'Username', 'username']
 ssh_panels = ['dragon']
+
+
+def generate_napsternetv_link(host, port, user, password, udgpw_port, remarks):
+    """
+    این تابع اطلاعات کانفیگ SSH را گرفته و لینک مخصوص NapsternetV را تولید می‌کند.
+    """
+    config_dict = {
+        "sshConfigType": "SSH-Direct",
+        "remarks": remarks,
+        "sshHost": host,
+        "sshPort": int(port),
+        "sshUsername": user,
+        "sshPassword": password,
+        "sni": "",
+        "tlsVersion": "DEFAULT",
+        "httpProxy": "",
+        "authenticateProxy": False,
+        "proxyUsername": "",
+        "proxyPassword": "",
+        "payload": "",
+        "dnsTTMode": "UDP",
+        "dnsServer": "",
+        "nameserver": "",
+        "publicKey": "",
+        "udgpwPort": int(udgpw_port),
+        "udgpwTransparentDNS": True
+    }
+
+    # تبدیل دیکشنری به رشته JSON
+    json_string = json.dumps(config_dict)
+
+    # انکود رشته JSON با Base64
+    base64_bytes = base64.b64encode(json_string.encode('utf-8'))
+    base64_string = base64_bytes.decode('utf-8')
+
+    # ساخت لینک نهایی
+    napsternetv_link = f"npvt-ssh://{base64_string}"
+    
+    return napsternetv_link
+
+
 
 
 def sellers_id_add_list():
@@ -7307,8 +7349,17 @@ def call_BL(bot, query):
                     port = get_another_port_if_exists(host, port)
                     HOST = ((text.split("SSH Host : ")[1]).split("\n")[0]).replace("<pre>", "").replace("</pre>", "").replace("<code>", "").replace("</code>", "").replace(" ", "")
                     url = f"ssh://{user}:{passw}@{HOST}:{port}#{user}"
+                    
+                    # --->>> شروع تغییرات <<<---
+                    # 1. لینک NapsternetV را تولید کنید
+                    # (دقت کنید که متغیر udgpw از قبل باید مقدار داشته باشد)
+                    napster_link = generate_napsternetv_link(HOST, port, user, passw, udgpw, user)
+                    
+                    # 2. لینک QR و لینک NapsternetV را به پیام اضافه کنید
                     photo = QR_Maker(url)
                     text += "\n\nURL: " + "<code>" + url + "</code>"
+                    text += "\n\nNapsterNetV: " + "<code>" + napster_link + "</code>"
+                    # --->>> پایان تغییرات <<<---
                     add_user_db(chat_id, name, USERNAME, user, host)
                     value = old_value - price
                     update_user_wallet(chat_id, value)
